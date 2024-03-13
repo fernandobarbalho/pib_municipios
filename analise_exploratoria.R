@@ -88,5 +88,16 @@ populacao_municipios_1991_2022 %>%
             .by= c(ano,faixa_populacional )) %>%
   ggplot()+
   geom_col(aes(x=ano, y= soma_perc)) +
-  facet_wrap(faixa_populacional~., scales = "free_y")
+  facet_wrap(faixa_populacional~., scales = "free_y") +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_blank()
+  ) +
+  labs(
+    title = "Evolução da soma dos percentuais de PIB",
+    subtitle = "Municípios de São Paulo por faixas de população",
+    y= "soma do percentual do PIB"
+  )
 

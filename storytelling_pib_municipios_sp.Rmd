@@ -1,0 +1,202 @@
+---
+title: "Anotações sobre o PIB dos municípios de São Paulo"
+author: "Fernando Almeida Barbalho"
+date: '2024-03-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(colorspace)
+library(patchwork)
+
+mapa_sp <- readRDS("mapa_sp.rds")
+
+pib_trabalho <- readRDS("pib_trabalho.rds")
+
+pib_total_sp <- readRDS("pib_total_sp.rds")
+
+populacao_municipios_1991_2022 <- read_csv("populacao_municipios_1991_2022.csv")
+
+mun_pop_entre_50k_100k<-
+  (populacao_municipios_1991_2022 %>%
+  filter(between(populacao,50001,100000),
+         sigla_uf == "SP") %>%
+  distinct(id_municipio))$id_municipio
+```
+
+
+
+```{r fig.width=10, fig.height=8}
+
+#sf::st_as_sf(
+
+graf1<-
+  sf::st_as_sf(mapa_sp %>%
+  mutate(municipio_codigo = as.character(code_muni))) %>%
+  inner_join(
+    pib_trabalho %>%
+      filter(ano==2021)
+  ) %>%
+  ggplot() +
+  geom_sf(aes(fill=perc)) +
+  scale_fill_continuous_sequential(palette = "Heat 2") +
+  theme_void() +
+  labs(
+    title = "Distribuição do PIB de São Paulo",
+    subtitle = "Todos municípios do Estado",
+    fill = "(%) PIB de SP",
+    caption = "Ano referência: 2021. Fonte: IBGE"
+  )+
+  theme(
+    panel.background = element_rect(fill = "black")
+  )
+
+
+
+graf2<-
+  sf::st_as_sf(mapa_sp %>%
+  mutate(municipio_codigo = as.character(code_muni))) %>%
+  #filter(municipio_codigo != "3550308") %>%
+  inner_join(
+    pib_trabalho %>%
+      filter(ano==2021) %>%
+      mutate(perc = ifelse(municipio_codigo == "3550308",NA,perc))
+  ) %>%
+  ggplot() +
+  geom_sf(aes(fill=perc)) +
+  scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray") +
+  theme_void() +
+  labs(
+    title = "Distribuição do PIB de São Paulo",
+    subtitle = "Todos municípios do Estado menos a capital",
+    fill = "(%) PIB de SP",
+    caption = "Ano referência: 2021. Fonte: IBGE"
+  ) +
+  theme(
+    panel.background = element_rect(fill = "black")
+  )
+
+graf1 + graf2
+```
+
+
+```{r fig.width=10, fig.height=8}
+
+hjust<- c(1,rep(-0.1,19))
+cor<- c("white", rep("black",19))
+
+graf1<-
+pib_trabalho %>%
+  filter (ano==2021) %>%
+  arrange(desc(valor)) %>%
+  mutate( municipio = str_sub(municipio,1, str_length(municipio)-4),
+          municipio = reorder(municipio, valor)) %>%
+  slice_max(order_by = valor, n=20) %>% 
+  mutate(valor = valor/10^6) %>%
+  ggplot(aes(x=valor, y=municipio))+
+  geom_col(aes(fill=valor))+
+  geom_text(aes(label=round(valor,1), x= valor),hjust = hjust, color = cor, size =3) +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
+  labs(
+    title = "Ranking do PIB em São Paulo em 2021",
+    subtitle = "Vinte municípios incluindo capital",
+    x= "PIB do município em R$ bilhões",
+    y= ""
+  )
+
+graf2<-
+pib_trabalho %>%
+  filter (ano==2021,
+          municipio_codigo != "3550308") %>%
+  mutate(municipio = str_sub(municipio,1, str_length(municipio)-4),
+          municipio = reorder(municipio, valor)) %>%
+  slice_max(order_by = valor, n=20) %>% 
+  mutate(valor = valor/10^6) %>%
+  ggplot(aes(x=valor, y=municipio))+
+  geom_col(aes(fill = valor))+
+  geom_text(aes(label=round(valor,1), x= valor),hjust = hjust, color = cor, size =3) +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
+  labs(
+    title = "Ranking do PIB em São Paulo em 2021",
+    subtitle = "Vinte municípios sem incluir capital",
+    x= "PIB do município em R$ bilhões",
+    y= ""
+  )
+
+graf1 + graf2
+
+```
+
+
+```{r}
+# Definindo os intervalos
+intervalos <- c(0, 2000, 5000, 10000, 20000, 50000, 100000, 500000, Inf)
+nomes_faixas <- c("até 2.000", "2.001 a 5.000", "5.001 a 10.000", "10.001 a 20.000", "20.001 a 50.000", "50.001 a 100.000", "100.001 a 500.000", "> 500.000")
+
+# Adicionando a coluna de faixa populacional
+populacao_municipios_1991_2022$faixa_populacional <- cut(populacao_municipios_1991_2022$populacao, breaks = intervalos, labels = nomes_faixas, right = FALSE)
+
+
+
+populacao_municipios_1991_2022 %>%
+  mutate(municipio_codigo = as.character(id_municipio),
+         ano = as.character(ano)) %>%
+  inner_join(pib_trabalho) %>%
+  summarise(soma_perc = sum(perc),
+            .by= c(ano,faixa_populacional )) %>%
+  ggplot()+
+  geom_col(aes(x=ano, y= soma_perc)) +
+  facet_wrap(faixa_populacional~., scales = "free_y") +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90),
+    axis.title.x = element_blank()
+  ) +
+  labs(
+    title = "Evolução da soma dos percentuais de PIB",
+    subtitle = "Municípios de São Paulo por faixas de população",
+    y= "soma do percentual do PIB"
+  )
+
+
+```
+
+
+```{r}
+
+  sf::st_as_sf(mapa_sp %>%
+  mutate(municipio_codigo = as.character(code_muni))) %>%
+  inner_join(
+    pib_trabalho %>%
+      filter(ano==2021)
+  ) %>%
+  ggplot() +
+  geom_sf(aes(fill=perc)) +
+  scale_fill_continuous_sequential(palette = "Heat 2") +
+  theme_void() +
+  labs(
+    title = "Distribuição do PIB de São Paulo",
+    subtitle = "Municípios entre 50.000 e 100.000 habitantes",
+    fill = "(%) PIB de SP",
+    caption = "Ano referência: 2021. Fonte: IBGE"
+  )+
+  theme(
+    panel.background = element_rect(fill = "black")
+  )
+
+```
+
