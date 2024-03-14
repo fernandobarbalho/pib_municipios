@@ -38,11 +38,19 @@ mun_pop_entre_50k_100k<-
          sigla_uf == "SP") %>%
   distinct(id_municipio))$id_municipio
 
+top_20_50k<-
+  (pib_trabalho %>%
+     filter(ano%in% c(2021),
+            municipio_codigo %in% mun_pop_entre_50k_100k) %>%
+     slice_max(order_by = perc, n=20))$municipio_codigo
+
 contas_pib_sp<- pib_municipios_sp<- get_sidra(x = 5938, 
                                               geo= "City",
-                                              geo.filter = list("City"= mun_pop_entre_50k_100k) ,
-                                              period = as.character(2012:2021))
+                                              geo.filter = list("City"= top_20_50k) ,
+                                              period = c("2012","2021"))
 
+contas_pib_sp %>%
+  saveRDS("contas_pib_sp.rds")
 
 pib_trabalho<-
   pib_municipios_sp %>%
@@ -59,4 +67,19 @@ mapa_sp<-
 mapa_sp %>%
   saveRDS("mapa_sp.rds")
 
+
+mapa_sp_estado<- 
+  geobr::read_state (code_state = 35, simplified = FALSE) 
+
+mapa_sp_estado %>%
+  saveRDS("mapa_sp_estado.rds")
+
+
+mapa_sedes_sp<- 
+  geobr::read_municipal_seat()%>%
+  filter(abbrev_state == "SP")
+
+
+mapa_sedes_sp %>%
+  saveRDS("mapa_sedes_sp.rds")
 
