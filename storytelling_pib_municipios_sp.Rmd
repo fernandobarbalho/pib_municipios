@@ -178,7 +178,7 @@ populacao_municipios_1991_2022 %>%
     subtitle = "Municípios de São Paulo por faixas de população",
     y= "soma do percentual do PIB"
   ) +
-    facet_wrap(faixa_populacional~., scales = "free_y") +
+    facet_wrap(faixa_populacional~., scales = "free_y") 
 
 
 
