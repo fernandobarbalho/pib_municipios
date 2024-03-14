@@ -18,6 +18,14 @@ pib_trabalho <- readRDS("pib_trabalho.rds")
 
 pib_total_sp <- readRDS("pib_total_sp.rds")
 
+mapa_sp_estado <- readRDS("mapa_sp_estado.rds")
+
+mapa_sedes_sp <- readRDS("mapa_sedes_sp.rds")
+
+contas_pib_sp <- readRDS("contas_pib_sp.rds")
+
+contas_pib_sp <- janitor::clean_names(contas_pib_sp)
+
 populacao_municipios_1991_2022 <- read_csv("populacao_municipios_1991_2022.csv")
 
 mun_pop_entre_50k_100k<-
@@ -83,7 +91,7 @@ graf1 + graf2
 ```
 
 
-```{r fig.width=10, fig.height=8}
+```{r fig.width=10, fig.height=6 }
 
 hjust<- c(1,rep(-0.1,19))
 cor<- c("white", rep("black",19))
@@ -178,25 +186,93 @@ populacao_municipios_1991_2022 %>%
 
 ```{r}
 
-  sf::st_as_sf(mapa_sp %>%
+ top_20_50k<-
+   (pib_trabalho %>%
+      filter(ano%in% c(2021),
+             municipio_codigo %in% mun_pop_entre_50k_100k) %>%
+  slice_max(order_by = perc, n=20))$municipio_codigo
+  
+  
+ pib_trabalho %>%
+      filter(ano%in% c(2012,2021),
+             municipio_codigo %in% top_20_50k) %>%
+  mutate(municipio = str_sub(municipio,1, str_length(municipio)-4),
+          municipio = reorder(municipio, perc)) %>%
+  ggplot(aes(x=perc, y=municipio))+
+  geom_col(aes(fill = perc))+
+  geom_text(aes(label=round(perc,1)), size =3, hjust=1) +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
+  labs(
+    title = "Ranking do PIB das cidades entre 50.000 e 100.000 habitantes",
+    x= "",
+    y= "",
+    fill = "(%) PIB de SP"
+  ) +
+  facet_wrap(ano~.)
+  
+```
+
+
+```{r}
+
+  sf::st_as_sf(mapa_sedes_sp %>%
   mutate(municipio_codigo = as.character(code_muni))) %>%
   inner_join(
     pib_trabalho %>%
-      filter(ano==2021)
+      filter(ano%in% c(2021),
+             municipio_codigo %in% top_20_50k)
   ) %>%
   ggplot() +
-  geom_sf(aes(fill=perc)) +
+  geom_sf(aes(fill=perc), pch=21, color = "black", size=1.5) +
+  geom_sf(data= mapa_sp_estado, fill= NA) +
   scale_fill_continuous_sequential(palette = "Heat 2") +
   theme_void() +
   labs(
     title = "Distribuição do PIB de São Paulo",
-    subtitle = "Municípios entre 50.000 e 100.000 habitantes",
+    subtitle = "Top 20 municípios entre 50.000 e 100.000 habitantes",
     fill = "(%) PIB de SP",
     caption = "Ano referência: 2021. Fonte: IBGE"
   )+
   theme(
     panel.background = element_rect(fill = "black")
-  )
+  ) 
 
+```
+
+```{r fig.width=10, fig.height=8}
+contas_pib_sp %>%
+  filter(variavel_codigo %in% c(515, 519, 527, 6572)) %>%
+  mutate(variavel = case_when(
+    variavel_codigo == 515 ~"VA Agropecuária",
+    variavel_codigo == 519 ~"VA Indústria",
+    variavel_codigo == 527 ~"VA Administração",
+    variavel_codigo == 6572 ~"VA Serviços"
+  )) %>%
+  rename(perc = valor) %>%
+  mutate(municipio = str_sub(municipio,1, str_length(municipio)-4),
+          municipio = reorder(municipio, perc)) %>%
+  ggplot(aes(x=perc, y=municipio))+
+  geom_col(aes(fill = perc))+
+  geom_text(aes(label=round(perc,1)), size =3, hjust=1) +
+  theme_light() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.x = element_text(angle = 90)
+  ) +
+  scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
+  labs(
+    title = "Ranking do PIB das cidades entre 50.000 e 100.000 habitantes",
+    subtitle = "(%) Valor Adicionado Bruto de SP",
+    x= "",
+    y= "",
+    fill = "(%) VA"
+  ) +
+  facet_wrap(ano+variavel~., ncol = 4) 
+  
 ```
 
