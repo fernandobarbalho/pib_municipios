@@ -12,20 +12,19 @@ library(tidyverse)
 library(colorspace)
 library(patchwork)
 
-mapa_sp <- readRDS("mapa_sp.rds")
+#mapa_sp <- readRDS("mapa_sp.rds")
 
 pib_trabalho <- readRDS("pib_trabalho_2023.rds")
 
 pib_total_sp <- readRDS("pib_total_sp_2023.rds")
 
-mapa_sp_estado <- readRDS("mapa_sp_estado.rds")
+#mapa_sp_estado <- readRDS("mapa_sp_estado.rds")
 
-mapa_sedes_sp <- readRDS("mapa_sedes_sp.rds")
-
-
+#mapa_sedes_sp <- readRDS("mapa_sedes_sp.rds")
 
 
-populacao_municipios_1991_2022 <- read_csv("populacao_municipios_1991_2022.csv")
+
+#populacao_municipios_1991_2022 <- read_csv("populacao_municipios_1991_2022.csv")
 
 cor_fundo<- "#D0D0D0"# "#F8F8F8"
 
@@ -96,12 +95,12 @@ cor_texto<- "#324e5a"
 ```
 
 
-```{r  fig.dpi=300, fig.width=10, fig.height=6 }
+```{r  fig.dpi=300 }
 
 #fig.width=10, fig.height=6
 
-hjust<- c(1,rep(-0.1,19))
-cor<- c("white", rep("black",19))
+#hjust<- c(1,rep(-0.1,19))
+#cor<- c("white", rep("black",19))
 
 dados_grafico_1<-
   pib_trabalho %>%
@@ -124,9 +123,10 @@ dados_grafico_1 %>%
             hjust = -0.1, 
             color = cor_texto, size =3) +
   geom_text(data = tibble(valor = 685, municipio = "Barueri " ),
-            aes(label = str_wrap( paste0("São Paulo capital corresponde a ", scales::percent(proporcao_capital, accuracy = 1.0)," do total do PIB paulsta") ,35),),
+            aes(label = str_wrap( paste0( scales::percent(proporcao_capital, accuracy = 1.0)," do total do PIB paulista") ,12),),
             color = cor_texto,
-            fontface = "bold")+
+            fontface = "bold",
+            vjust = 0.8)+
   geom_curve( data = tibble(valor = 1000, municipio = "São Paulo "),
               aes( xend = 700, yend = "São Bernardo do Campo "),
               curvature = -0.25, ncp = 50,
@@ -134,7 +134,7 @@ dados_grafico_1 %>%
               color = cor_texto
   ) +
   scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
-  scale_x_continuous(expand = expansion(mult = c(0.01, 0.15))) +
+  scale_x_continuous(expand = expansion(mult = c(0.01, 0.25))) +
   theme_light()  +
   theme(
     panel.background =  element_rect( fill= cor_fundo_painel),
@@ -154,7 +154,7 @@ dados_grafico_1 %>%
   ) +
   
   labs(
-    title = "Vinte municípios com capital",
+    title = str_wrap("Vinte municípios com capital", 16) ,
     subtitle = "",
     x= "",
     y= ""
@@ -175,7 +175,7 @@ dados_grafico_2 %>%
   geom_col(aes(fill=valor), show.legend = FALSE)+
   geom_text(aes(label= scales::number(valor, accuracy = 1.0, big.mark = "."), x= valor),hjust = -0.1, color = cor_texto, size =3) +
   scale_fill_continuous_sequential(palette = "Heat 2", na.value = "lightgray")+
-  scale_x_continuous(expand = expansion(mult = c(0.01, 0.08))) +
+  scale_x_continuous(expand = expansion(mult = c(0.01, 0.16))) +
   theme_light()  +
   theme(
     panel.background =  element_rect( fill= cor_fundo_painel),
@@ -194,7 +194,7 @@ dados_grafico_2 %>%
     
   ) +
   labs(
-    title = "Vinte municípios sem capital",
+    title =  str_wrap("Vinte municípios sem capital", 16) ,
     subtitle = "",
     x= "",
     y= ""
