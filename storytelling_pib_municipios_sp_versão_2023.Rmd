@@ -203,7 +203,7 @@ dados_grafico_2 %>%
 graf1 + graf2 + 
   plot_annotation(title = "PIB dos municípios de São Paulo em 2023", 
                   subtitle = "Valores em R$ bilhões", 
-                  caption = "Fonte: IBGE. Elaboração: VPR/DIESO",
+                  caption = "Fonte: IBGE. Dados disponibilizados em Dez 2025. Elaboração: VPR/DIESO em 08/01/2026",
                   theme = theme(
                     plot.background = element_rect(fill =cor_fundo),
                     plot.title = element_text(size= 14, face = "bold"),
